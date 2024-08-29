@@ -22,12 +22,15 @@ app.get('/ask/:product', (req, res) => {
 
 app.put('/buy', (req, res) => {
 
-    const product = inventory.find(element => element.productName === req.body.product);
+    const product = inventory.find(element => element.productName === req.body.item);
+
+    const amountRequested = req.body.amount;
+
     if (product) {
-        if (product.stock > 0) {
-            product.stock--;
-            console.log(`sold ${req.body.product} for ${req.body.price}, remaining ${product.stock}`);
-            revenue += req.body.price;
+        if (product.stock >= amountRequested) {
+            product.stock = product.stock - amountRequested;
+            console.log(`sold ${amountRequested}x ${req.body.item} for ${product.price}, remaining ${product.stock}`);
+            revenue += amountRequested * product.price;
             console.log(revenue)
         } else {
             console.log(`product ${product.productName} out of stock!`)

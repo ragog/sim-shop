@@ -8,8 +8,8 @@ function getRandomInt(max) {
 
 const TICK_RATE_MS = 1000; // the higher it is, the more time will elapse between ticks
 
-const PURCHASE_OBJECT_RARITY = 2; // the higher it is, the less items customers will want to buy
-const CUSTOMER_SPAWN_RATE = 3; // the higher it is, the fewer customers will enter the store
+const PURCHASE_OBJECT_RARITY = 4; // the higher it is, the less items customers will want to buy
+const CUSTOMER_SPAWN_RATE = 10; // the higher it is, the fewer customers will enter the store
 const CUSTOMER_TIME_AVAILABLE = 10; // the higher it is, the longer (on average) customers will spend in the store
 
 class Customer {
@@ -18,13 +18,7 @@ class Customer {
 	inTheShop;
 	timeLeft;
 
-	possiblePurchases = [
-		{ product: 'magazine', price: 10 },
-		{ product: 'chocolate bar', price: 1 },
-		{ product: 'newspaper', price: 2 },
-		{ product: 'crisps', price: 4 },
-		{ product: 'ice cream', price: 7 },
-	];
+	possiblePurchases = ['magazine', 'chocolate bar', 'newspaper', 'crisps', 'ice cream'];
 
 	constructor() {
 		this.name = faker.name.firstName();
@@ -38,58 +32,59 @@ class Customer {
 		this.possiblePurchases.forEach((item) => {
 			let roll = getRandomInt(PURCHASE_OBJECT_RARITY);
 			if (!roll) {
-				decidedPurchases.push(item);
+				const amount = getRandomInt(2) + 1; //todo
+				const acceptablePrice = getRandomInt(19) + 1; //todo
+				decidedPurchases.push({ item, acceptablePrice, amount });
 			}
 		});
-		shuffle(decidedPurchases)
+		shuffle(decidedPurchases);
 		return decidedPurchases;
 	}
 
 	tick() {
+		if (!this.purchasesLeft.length) {
+			this.exit('finished with their purchases');
+			return;
+		}
+
+		if (!this.timeLeft) {
+			this.exit('ran out of time');
+			return;
+		}
+
 		if (this.purchasesLeft.length) {
 			this.attemptPurchase();
 		}
 
-		if (!this.purchasesLeft || !this.timeLeft) {
-			this.exit();
-		}
 		this.timeLeft--;
 	}
 
 	async attemptPurchase() {
 		const attemptedProductPurchase = this.purchasesLeft[0];
 
-		const { data } = await axios.get(`http://localhost:3000/ask/${attemptedProductPurchase.product}`)
-		console.log(`${this.name} asks about ${attemptedProductPurchase.product}. He is told there are ${data.stock} left and that the price is ${data.price}`)
+		const { data } = await axios.get(`http://localhost:3000/ask/${attemptedProductPurchase.item}`);
+
+		console.log(
+			`${this.name} asks about ${attemptedProductPurchase.item}. He is told there are ${data.stock} left and that the price is ${data.price}`
+		);
 
 		if (data.stock > 0) {
-			if (data.price < 3) { // todo
+			if (data.price <= attemptedProductPurchase.acceptablePrice) {
 				const response = await axios.put('http://localhost:3000/buy', attemptedProductPurchase);
-				console.log(`${this.name} buys ${this.purchasesLeft[0].product} for ${data.price}`);
+				console.log(
+					`${this.name} buys ${this.purchasesLeft[0].amount}x ${this.purchasesLeft[0].item} for ${data.price}`
+				);
 			} else {
-				console.log(`${attemptedProductPurchase.product} was too expensive for ${this.name}.`)
+				console.log(`${this.name} found ${attemptedProductPurchase.item} too expensive.`);
 			}
 		}
-		
 
-
-		// const { data } = axios
-		// 	.put('http://localhost:3000/buy',
-		// 		attemptedProductPurchase
-		// 	)
-		// 	.then(function (response) {
-		// 		// return response.data;
-		// 		// console.log(response);
-		// 	})
-		// 	.catch(function (error) {
-		// 		console.log(error);
-		// 	});
-		// console.log(`${this.name} asks for ${this.purchasesLeft[0].product} `);
+		this.purchasesLeft.shift();
 	}
 
-	exit() {
+	exit(reason) {
 		this.inTheShop = false;
-		console.log(`${this.name} leaves`);
+		console.log(`${this.name} leaves - ${reason}`);
 	}
 }
 
@@ -97,7 +92,6 @@ async function root() {
 	let activeCustomers = [];
 
 	while (true) {
-		// tick
 		console.log('TICK');
 		await new Promise((resolve) => setTimeout(resolve, TICK_RATE_MS));
 
@@ -109,7 +103,13 @@ async function root() {
 		if (getRandomInt(CUSTOMER_SPAWN_RATE) === 0) {
 			const newCustomer = new Customer();
 			activeCustomers.push(newCustomer);
-			console.log(`${newCustomer.name} entered the shop`);
+
+			//debug
+			const needs = newCustomer.purchasesLeft.map(function (item) {
+				return item['item'];
+			});
+
+			console.log(`${newCustomer.name} entered the shop, needs to buy ${needs}`);
 		}
 	}
 }
