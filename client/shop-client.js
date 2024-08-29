@@ -5,7 +5,7 @@ function getRandomInt(max) {
 	return Math.floor(Math.random() * max);
 }
 
-const TICK_RATE_MS = 1000 // the higher it is, the more time will elapse between ticks
+const TICK_RATE_MS = 1000; // the higher it is, the more time will elapse between ticks
 
 const PURCHASE_OBJECT_RARITY = 2; // the higher it is, the less items customers will want to buy
 const CUSTOMER_SPAWN_RATE = 3; // the higher it is, the fewer customers will enter the store
@@ -56,8 +56,19 @@ class Customer {
 	}
 
 	attemptPurchase() {
-		// axios.get(url)
-		console.log(`${this.name} asks for ${this.purchasesLeft[0].product}`);
+		const attemptedProductPurchase = this.purchasesLeft[0];
+		const { data } = axios
+			.put('http://localhost:3000/buy',
+				attemptedProductPurchase
+			)
+			.then(function (response) {
+				// return response.data;
+				// console.log(response);
+			})
+			.catch(function (error) {
+				console.log(error);
+			});
+		console.log(`${this.name} asks for ${this.purchasesLeft[0].product} `);
 	}
 
 	exit() {
