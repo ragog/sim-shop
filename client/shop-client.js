@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker';
+import { shuffle } from './utils/array.js';
 import axios from 'axios';
 
 function getRandomInt(max) {
@@ -36,10 +37,11 @@ class Customer {
 		const decidedPurchases = [];
 		this.possiblePurchases.forEach((item) => {
 			let roll = getRandomInt(PURCHASE_OBJECT_RARITY);
-			if (roll) {
+			if (!roll) {
 				decidedPurchases.push(item);
 			}
 		});
+		shuffle(decidedPurchases)
 		return decidedPurchases;
 	}
 
