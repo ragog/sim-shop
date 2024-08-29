@@ -8,12 +8,17 @@ app.use(express.json());
 let revenue = 0;
 
 let inventory = [
-    { productName: 'magazine', stock: 20 },
-    { productName: 'chocolate bar', stock: 30 },
-    { productName: 'newspaper', stock: 14 },
-    { productName: 'crisps', stock: 40 },
-    { productName: 'ice cream', stock: 27 },
+    { productName: 'magazine', price: 1, stock: 20 },
+    { productName: 'chocolate bar', price: 2, stock: 30 },
+    { productName: 'newspaper', price: 3, stock: 14 },
+    { productName: 'crisps', price: 4, stock: 40 },
+    { productName: 'ice cream', price: 5, stock: 27 },
 ];
+
+app.get('/ask/:product', (req, res) => {
+    const product = inventory.find(element => element.productName === req.params.product);
+    res.send(product)
+});
 
 app.put('/buy', (req, res) => {
 
